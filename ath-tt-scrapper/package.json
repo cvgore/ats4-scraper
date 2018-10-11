@@ -1,0 +1,12 @@
+{
+  "name": "ath-tt-scrapper",
+  "version": "0.0.0",
+  "description": "ath-tt-scrapper",
+  "main": "app.js",
+  "author": {
+    "name": ""
+  },
+  "devDependencies": {
+    "@types/node": "^8.0.14"
+  }
+}
