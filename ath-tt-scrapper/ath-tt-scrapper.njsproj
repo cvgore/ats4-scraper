@@ -33,9 +33,39 @@
   </PropertyGroup>
   <ItemGroup>
     <TypeScriptCompile Include="app.ts" />
+    <Content Include=".iCal\iCalBaseComponent.ts">
+      <SubType>Code</SubType>
+    </Content>
     <Content Include="package.json" />
     <Content Include="README.md" />
     <Content Include="tsconfig.json" />
+    <TypeScriptCompile Include="ical.d.ts">
+      <SubType>Code</SubType>
+    </TypeScriptCompile>
+    <TypeScriptCompile Include=".iCal\Event.ts">
+      <SubType>Code</SubType>
+    </TypeScriptCompile>
+    <TypeScriptCompile Include=".iCal\FileNotFoundError.ts">
+      <SubType>Code</SubType>
+    </TypeScriptCompile>
+    <TypeScriptCompile Include=".iCal\iCal.ts">
+      <SubType>Code</SubType>
+    </TypeScriptCompile>
+    <TypeScriptCompile Include=".iCal\LogicError.ts">
+      <SubType>Code</SubType>
+    </TypeScriptCompile>
+    <TypeScriptCompile Include=".iCal\Parser.ts">
+      <SubType>Code</SubType>
+    </TypeScriptCompile>
+    <TypeScriptCompile Include=".iCal\UnknownError.ts">
+      <SubType>Code</SubType>
+    </TypeScriptCompile>
+    <TypeScriptCompile Include="Scrapper.ts">
+      <SubType>Code</SubType>
+    </TypeScriptCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include=".iCal\" />
   </ItemGroup>
   <!-- Do not delete the following Import Project.  While this appears to do nothing it is a marker for setting TypeScript properties before our import that depends on them. -->
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\TypeScript\Microsoft.TypeScript.targets" Condition="False" />
