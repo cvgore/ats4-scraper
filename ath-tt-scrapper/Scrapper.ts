@@ -2,7 +2,7 @@
 import * as winston from "winston";
 
 interface Department {
-    id: number, name: string, courses: Course[] | null
+    id: number, name: string, courses: Course[] | null, type: number, link: number
 };
 interface Course {
     id: number, name: string, types: StudyType[]
@@ -17,8 +17,8 @@ type StudyTypes = "full-time" | "external" | "evening";
 
 export default class Scrapper {
     public static readonly version = "0.0.1";
-    private readonly departmentRegex = /onclick="branch\((\d+),(\d+),(\d+),'([a-z ąćżśłóźńę,-]+)'\);">/gi;
-    private readonly leftTreeBranchRegex = /<li[^>]*><img src="[^"]*" alt="" id="[^"]*" onclick=" get_left_tree_branch\( '(\d+)', 'img_\d+', 'div_\d+', '(\d+)', '(\d+)' \); " onmouseover="[^"]*" style="[^"]*">[ ]{2}([a-z ąćżśłóźńę,-]+)<div[^>]*><\/div><\/li>/gi;
+    private readonly departmentRegex: RegExp = /onclick="branch\((\d+),(\d+),(\d+),'([a-z ąćżśłóźńę,-]+)'\);">/gi;
+    private readonly leftTreeBranchRegex: RegExp = /<li[^>]*><img src="[^"]*" alt="" id="[^"]*" onclick=" get_left_tree_branch\( '(\d+)', 'img_\d+', 'div_\d+', '(\d+)', '(\d+)' \); " onmouseover="[^"]*" style="[^"]*">[ ]{2}([a-z ąćżśłóźńę,-]+)<div[^>]*><\/div><\/li>/gi;
     private readonly regexGroups = {
         department: {
             type: 1, id: 2, link: 3, name: 4
@@ -27,11 +27,13 @@ export default class Scrapper {
             id: 1, type: 2, link: 3, name: 4
         }
     };
-    private static readonly baseUrl = "http://www.plany.ath.bielsko.pl";
+    private static readonly baseUrl: string = "http://www.plany.ath.bielsko.pl";
     
     private $axios: AxiosInstance;
     private departments: Department[] = [];
     private $logger: winston.Logger;
+
+    private readonly waitNextRequest: number = 5000;
 
     constructor() {
         this.$logger = winston.createLogger({
@@ -84,10 +86,38 @@ export default class Scrapper {
                 this.departments.push({
                     id: Number(match[this.regexGroups.department.id]),
                     name: match[this.regexGroups.department.name],
-                    courses: null
+                    courses: [],
+                    type: Number(match[this.regexGroups.department.type]),
+                    link: Number(match[this.regexGroups.department.link])
                 });
             }
-            this.$logger.info(`${this.departments.length} departments found`, this.departments);
+            this.$logger.info(`${this.departments.length} departments found`, this.departments.map(v => v.name));
         });
+    }
+
+    private getCoursesByDepartment(): void {
+        this.$logger.info(`Fetching study types available for all departments...`);
+        let func = (async (type: number, branch: number, link: number, departmentId: number): Promise<boolean> => {
+            this.$axios.get<string>(this.studyTypesUrl(type, branch, link)).then((html) => {
+                this.$logger.info(`Fetched succesfully study types for department '${this.departments[departmentId].name}'`);
+                let deps = new RegExp(this.leftTreeBranchRegex, 'gi');
+                let match: RegExpExecArray;
+                while (match = deps.exec(html.data)) {
+                    let department = this.departments[departmentId];
+                    let course = department.courses.find((value, i): Course | false => {
+                        if (value.name === this.getCourseNormalizedName(match[this.regexGroups.leftTreeBranch.name])) {
+
+                        }
+                    });
+                }
+            });
+        });
+        this.departments.forEach((val) => {
+            val.id
+        });
+    }
+
+    private getCourseNormalizedName(name: string) {
+        return name.replace(/\s{1}\w$/, ``);
     }
 }

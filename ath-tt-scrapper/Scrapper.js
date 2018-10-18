@@ -16,6 +16,7 @@ class Scrapper {
             }
         };
         this.departments = [];
+        this.waitNextRequest = 5000;
         this.$logger = winston.createLogger({
             level: 'info',
             format: winston.format.json(),
@@ -64,8 +65,10 @@ class Scrapper {
                     courses: null
                 });
             }
-            this.$logger.info(`${this.departments.length} departments found`, this.departments);
+            this.$logger.info(`${this.departments.length} departments found`, this.departments.map(v => v.name));
         });
+    }
+    getStudyTypesByDepartment(id) {
     }
 }
 Scrapper.version = "0.0.1";
