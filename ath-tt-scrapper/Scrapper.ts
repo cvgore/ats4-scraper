@@ -59,10 +59,10 @@ export default class Scrapper {
                 format: winston.format.simple()
             }));
         }
-        this.$logger.info(`ATH-TT-Scrapper v.${Scrapper.version} starting...`);
+        this.$logger.info(`ATS4-Scrapper v.${Scrapper.version} starting...`);
         this.$axios = axios.create({
             headers: {
-                //'User-Agent': `ATH-TT-Scrapper/${Scrapper.version}/kp055372`
+                //'User-Agent': `ATS4-Scrapper/${Scrapper.version} (https://github.com/cvgore/ats4-scrapper)`
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:62.0) Gecko/20100101 Firefox/62.0'
             }
         });
