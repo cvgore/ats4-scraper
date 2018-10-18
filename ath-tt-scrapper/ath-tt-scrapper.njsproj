@@ -61,6 +61,9 @@
     <TypeScriptCompile Include=".iCal\UnknownError.ts">
       <SubType>Code</SubType>
     </TypeScriptCompile>
+    <TypeScriptCompile Include="QueueRequest.ts">
+      <SubType>Code</SubType>
+    </TypeScriptCompile>
     <TypeScriptCompile Include="Scrapper.ts">
       <SubType>Code</SubType>
     </TypeScriptCompile>
