@@ -1,25 +1,7 @@
 ﻿import axios, { AxiosInstance } from "axios";
 import * as winston from "winston";
 import { writeFileSync } from "fs";
-
-interface Department {
-    id: number, name: string, courses: Course[] | null, type: number, link: number
-};
-interface Course {
-    id: number, name: string, types: StudyType[], type: number, link: number
-}
-interface StudyType {
-    id: number, studyType: StudyTypes, type: number, link: number
-}
-// full-time = stacjonarne
-// external = zaoczne
-// evening = wieczorowe
-enum StudyTypes {
-    FULL_TIME = "fulltime",
-    EXTERNAL = "external",
-    EVENING = "evening",
-    UNKNOWN = "?"
-}
+import { Department, Course, StudyType, StudyTypes, ScraperConfig } from "./Types";
 
 enum DepartmentRegexValues {
     Type = 1,
@@ -45,8 +27,8 @@ export default class Scraper {
     private departments: Department[] = [];
     private $logger: winston.Logger;
 
-    constructor(baseUrl: string) {
-        this.baseUrl = baseUrl;
+    constructor(config: ScraperConfig) {
+        this.baseUrl = config.baseUrl;
         this.$logger = winston.createLogger({
             level: 'info',
             format: winston.format.json(),

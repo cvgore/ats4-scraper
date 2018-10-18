@@ -8,4 +8,8 @@
 import Scraper from "./Scraper";
 import { setTimeout } from "timers";
 
-const s = new Scraper("http://www.plany.ath.bielsko.pl");
+const s = new Scraper({
+    baseUrl: "http://www.plany.ath.bielsko.pl",
+    outputPath: "data.json",
+    requestsPerMinute: 12
+});
