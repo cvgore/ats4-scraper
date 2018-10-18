@@ -35,17 +35,18 @@ enum LeftTreeBranchValues {
     Name
 }
 
-export default class Scrapper {
+export default class Scraper {
     public static readonly version = "0.0.1";
     private readonly departmentRegex: RegExp = /onclick="branch\((\d+),(\d+),(\d+),'([a-z ąćżśłóźńę,-]+)'\);">/gi;
     private readonly leftTreeBranchRegex: RegExp = /<li[^>]*><img\s+src='[^']*' alt='[^']*' id='[^']*'\s+onclick=" get_left_tree_branch\( '(\d+)', 'img_\d+', 'div_\d+', '(\d+)', '(\d+)' \); "\s+onmouseover="[^"]*"[^>]*>[ ]{2}([a-z ąćżśłóźńę,-]+)<div[^>]*><\/div><\/li>/gi;
-    private static readonly baseUrl: string = "http://www.plany.ath.bielsko.pl";
+    private baseUrl: string;
     
     private $axios: AxiosInstance;
     private departments: Department[] = [];
     private $logger: winston.Logger;
 
-    constructor() {
+    constructor(baseUrl: string) {
+        this.baseUrl = baseUrl;
         this.$logger = winston.createLogger({
             level: 'info',
             format: winston.format.json(),
@@ -59,7 +60,7 @@ export default class Scrapper {
                 format: winston.format.simple()
             }));
         }
-        this.$logger.info(`ATS4-Scrapper v.${Scrapper.version} starting...`);
+        this.$logger.info(`ATS4-Scraper v.${Scraper.version} starting...`);
         this.$axios = axios.create({
             headers: {
                 //'User-Agent': `ATS4-Scrapper/${Scrapper.version} (https://github.com/cvgore/ats4-scrapper)`
@@ -80,27 +81,27 @@ export default class Scrapper {
     }
 
     private studyTypesUrl(type: number, branch: number, link: number): string {
-        return `${Scrapper.baseUrl}/left_menu_feed.php?type=${type}&branch=${branch}&link=${link}`;
+        return `${this.baseUrl}/left_menu_feed.php?type=${type}&branch=${branch}&link=${link}`;
     }
 
     private testConnectionBefore(): Promise<void> {
         return new Promise((resolve, reject) => {
-            this.$axios.get<string>(Scrapper.baseUrl).then((html) => {
+            this.$axios.get<string>(this.baseUrl).then((html) => {
                 resolve();
             }).catch(err => reject(err));
         });
     }
 
     private leftTreeBranchUrl(type: number, branch: number, link: number): string {
-        return `${Scrapper.baseUrl}/left_menu_feed.php?type=${type}&branch=${branch}&link=${link}&bOne=1`;
+        return `${this.baseUrl}/left_menu_feed.php?type=${type}&branch=${branch}&link=${link}&bOne=1`;
     }
 
     private planUrl(type: number, id: number): string {
-        return `${Scrapper.baseUrl}/plan.php?type=${type}&id=${id}&cvsfile=true`;
+        return `${this.baseUrl}/plan.php?type=${type}&id=${id}&cvsfile=true`;
     }
 
     private departmentsUrl(): string {
-        return `${Scrapper.baseUrl}/left_menu.php`;
+        return `${this.baseUrl}/left_menu.php`;
     }
     private getDepartments(): Promise<void> {
         return new Promise((resolve, reject) => {

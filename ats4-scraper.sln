@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.28010.2026
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9092AA53-FB77-4645-B42D-1CCCA6BD08BD}") = "ats4-scrapper", "ats4-scrapper\ats4-scrapper.njsproj", "{14416F39-C888-427E-83E5-BDEE9A085384}"
+Project("{9092AA53-FB77-4645-B42D-1CCCA6BD08BD}") = "ats4-scraper", "ats4-scraper\ats4-scraper.njsproj", "{14416F39-C888-427E-83E5-BDEE9A085384}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

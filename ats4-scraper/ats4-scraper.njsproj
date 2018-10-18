@@ -2,8 +2,8 @@
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">14.0</VisualStudioVersion>
     <VSToolsPath Condition="'$(VSToolsPath)' == ''">$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)</VSToolsPath>
-    <Name>ats4-scrapper</Name>
-    <RootNamespace>ats4-scrapper</RootNamespace>
+    <Name>ats4-scraper</Name>
+    <RootNamespace>ats4-scraper</RootNamespace>
     <ToolsVersionPromptShown>3.0</ToolsVersionPromptShown>
   </PropertyGroup>
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
@@ -65,7 +65,7 @@
     <TypeScriptCompile Include="QueueRequest.ts">
       <SubType>Code</SubType>
     </TypeScriptCompile>
-    <TypeScriptCompile Include="Scrapper.ts">
+    <TypeScriptCompile Include="Scraper.ts">
       <SubType>Code</SubType>
     </TypeScriptCompile>
   </ItemGroup>

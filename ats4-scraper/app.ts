@@ -5,8 +5,7 @@
 
 //ical
 
-import Scrapper from "./Scrapper";
+import Scraper from "./Scraper";
 import { setTimeout } from "timers";
 
-const s = new Scrapper();
-setTimeout(() => { }, 10000000);
+const s = new Scraper("http://www.plany.ath.bielsko.pl");
