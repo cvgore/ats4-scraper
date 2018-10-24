@@ -10,6 +10,5 @@ import { setTimeout } from "timers";
 
 const s = new Scraper({
     baseUrl: "http://www.plany.ath.bielsko.pl",
-    outputPath: "data.json",
-    requestsPerMinute: 12
+    outputPath: "data.json"
 });

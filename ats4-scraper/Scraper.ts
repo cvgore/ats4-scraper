@@ -1,7 +1,7 @@
 ﻿import axios, { AxiosInstance } from "axios";
 import * as winston from "winston";
 import { writeFileSync } from "fs";
-import { Department, Course, StudyType, StudyTypes, ScraperConfig } from "./Types";
+import { Department, Course, StudyType, StudyTypes, ScraperConfig, ClassesTypes } from "./Types";
 
 enum DepartmentRegexValues {
     Type = 1,
@@ -20,6 +20,7 @@ enum LeftTreeBranchValues {
 export default class Scraper {
     public static readonly version = "0.0.1";
     private readonly departmentRegex: RegExp = /onclick="branch\((\d+),(\d+),(\d+),'([a-z ąćżśłóźńę,-]+)'\);">/gi;
+    private readonly planRegex: RegExp = /<li><img src="[^"]*" alt="" \/> <a href="plan\.php\?type=(\d+)&amp;id=(\d+)" target="[^"]*">([0-9a-z ąćżśłóźńę,\/-]+)<\/a><\/li>/gi;
     private readonly leftTreeBranchRegex: RegExp = /<li[^>]*><img\s+src='[^']*' alt='[^']*' id='[^']*'\s+onclick=" get_left_tree_branch\( '(\d+)', 'img_\d+', 'div_\d+', '(\d+)', '(\d+)' \); "\s+onmouseover="[^"]*"[^>]*>[ ]{2}([a-z ąćżśłóźńę,-]+)<div[^>]*><\/div><\/li>/gi;
     private baseUrl: string;
     
@@ -202,6 +203,24 @@ export default class Scraper {
             default:
                 this.$logger.warn(`Unknown '${str}' study type regular name`);
                 return StudyTypes.UNKNOWN;
+        }
+    }
+
+    private getClassesTypeFromRegularName(str: string): ClassesTypes {
+        switch (str) {
+            case "konw":
+                return ClassesTypes.CONSERVATOIRE;
+            case "lab":
+                return ClassesTypes.LABORATORY;
+            case "ćw":
+                return ClassesTypes.EXERCISE;
+            case "proj":
+                return ClassesTypes.PROJECT;
+            case "wyk":
+                return ClassesTypes.LECTURE;
+            default:
+                this.$logger.warn(`Unknown '${str}' classes type regular name`);
+                return ClassesTypes.UNKNOWN;
         }
     }
 }
