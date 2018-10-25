@@ -41,6 +41,9 @@
     <Content Include="package.json" />
     <Content Include="README.md" />
     <Content Include="tsconfig.json" />
+    <TypeScriptCompile Include="Errors\RegexMatchFailed.ts">
+      <SubType>Code</SubType>
+    </TypeScriptCompile>
     <TypeScriptCompile Include="ical.d.ts">
       <SubType>Code</SubType>
     </TypeScriptCompile>
@@ -59,7 +62,7 @@
     <TypeScriptCompile Include=".iCal\Parser.ts">
       <SubType>Code</SubType>
     </TypeScriptCompile>
-    <TypeScriptCompile Include=".iCal\UnknownError.ts">
+    <TypeScriptCompile Include="Errors\UnknownError.ts">
       <SubType>Code</SubType>
     </TypeScriptCompile>
     <TypeScriptCompile Include="QueueRequest.ts">
@@ -74,6 +77,7 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include=".iCal\" />
+    <Folder Include="Errors\" />
   </ItemGroup>
   <!-- Do not delete the following Import Project.  While this appears to do nothing it is a marker for setting TypeScript properties before our import that depends on them. -->
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\TypeScript\Microsoft.TypeScript.targets" Condition="False" />

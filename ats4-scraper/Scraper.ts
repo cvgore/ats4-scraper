@@ -1,7 +1,8 @@
 ﻿import axios, { AxiosInstance, AxiosResponse } from "axios";
 import * as winston from "winston";
 import { writeFileSync } from "fs";
-import { Department, Course, StudyType, StudyTypes, ScraperConfig, ClassesTypes } from "./Types";
+import { Department, Course, StudyType, StudyTypes, ScraperConfig, ClassesTypes, ILeftTreeBranch } from "./Types";
+import RegexMatchFailed from "./Errors/RegexMatchFailed";
 
 enum DepartmentRegexValues {
     Type = 1,
@@ -14,14 +15,15 @@ enum LeftTreeBranchValues {
     Id = 1,
     Type,
     Link,
-    Name
+    Name,
+    PlanType
 }
 
 export default class Scraper {
     public static readonly version = "0.0.1";
     private readonly departmentRegex: RegExp = /onclick="branch\((\d+),(\d+),(\d+),'([a-z ąćżśłóźńę,-]+)'\);">/gi;
     private readonly planRegex: RegExp = /<li><img src="[^"]*" alt="" \/> <a href="plan\.php\?type=(\d+)&amp;id=(\d+)" target="[^"]*">([0-9a-z ąćżśłóźńę,\/-]+)<\/a><\/li>/gi;
-    private readonly leftTreeBranchRegex: RegExp = /<li[^>]*><img\s+src='[^']*' alt='[^']*' id='[^']*'\s+onclick=" get_left_tree_branch\( '(\d+)', 'img_\d+', 'div_\d+', '(\d+)', '(\d+)' \); "\s+onmouseover="[^"]*"[^>]*>[ ]{2}([a-z ąćżśłóźńę,-]+)<div[^>]*><\/div><\/li>/gi;
+    private readonly leftTreeBranchRegex: RegExp = /<li[^>]*><img\s+src='[^']*'\s+alt='[^']*'\s+id='[^']*'\s+onclick="\s+get_left_tree_branch\(\s+'(\d+)',\s+'img_\d+',\s+'div_\d+',\s+'(\d+)',\s+'?(\d+)'\s+\); "\s+onmouseover="[^"]*"[^>]*>\s+(?:<a\s+href="plan\.php\?type=(\d+)&amp;id=(\d+)"[^>]+>[^<]+<\/a>|([a-z ąćżśłóźńę,-]+))<div[^>]*><\/div><\/li>/gi;
     private baseUrl: string;
     
     private $axios: AxiosInstance;
@@ -134,31 +136,62 @@ export default class Scraper {
                     return true;
                 }
             });
+
+            let id: number = Number(courseMatch[LeftTreeBranchValues.Id]);
+            let link: number = Number(courseMatch[LeftTreeBranchValues.Link]);
+            let type: number = Number(courseMatch[LeftTreeBranchValues.Type]);
         
             if (typeof course === "undefined") {
                 department.courses.push({
-                    id: Number(courseMatch[LeftTreeBranchValues.Id]),
+                    id, link, type,
                     name: this.getCourseNormalizedName(courseMatch[LeftTreeBranchValues.Name]),
-                    type: Number(courseMatch[LeftTreeBranchValues.Type]),
-                    link: Number(courseMatch[LeftTreeBranchValues.Link]),
                     types: [{
                         id: Number(studyTypesMatch[LeftTreeBranchValues.Id]),
-                        studyType: this.getStudyTypeFromRegularName(studyTypesMatch[LeftTreeBranchValues.Name]),
+                        studyType: {
+                            [this.getStudyTypeFromRegularName(studyTypesMatch[LeftTreeBranchValues.Name])]: {
+                                semesters: await this.getLeftTreeBranchContents(type, id, link)
+                            }
+                        },
                         link: Number(studyTypesMatch[LeftTreeBranchValues.Link]),
                         type: Number(studyTypesMatch[LeftTreeBranchValues.Type])
                     }]
                 })
             } else {
                 course.types.push({
-                    id: Number(studyTypesMatch[LeftTreeBranchValues.Id]),
-                    studyType: this.getStudyTypeFromRegularName(studyTypesMatch[LeftTreeBranchValues.Name]),
-                    link: Number(studyTypesMatch[LeftTreeBranchValues.Link]),
-                    type: Number(studyTypesMatch[LeftTreeBranchValues.Type])
+                    id, link, type,
+                    studyType: {
+                        [this.getStudyTypeFromRegularName(studyTypesMatch[LeftTreeBranchValues.Name])]: {
+                            semesters: await this.getLeftTreeBranchContents(type, id, link)
+                        }
+                    },
+
                 });
             }
         }
         this.$logger.info(`Fetched succesfully course(s) for '${this.getStudyTypeFromRegularName(studyTypesMatch[LeftTreeBranchValues.Name])} studies' for department '${this.departments[departmentId].name}'`);
         return true;
+    }
+    private async getLeftTreeBranchContents(type: number, branch: number, link: number, nameFmtCb?: (val: string) => string): Promise<ILeftTreeBranch[]> {
+        this.$logger.info(`Request - ${this.leftTreeBranchUrl(type, branch, link)}`);
+        if (typeof nameFmtCb === undefined) {
+            nameFmtCb = val => val;
+        }
+        let html: AxiosResponse<string> = await this.$axios.post<string>(this.leftTreeBranchUrl(type, branch, link));
+        let leftTreeBranchFound = new RegExp(this.leftTreeBranchRegex, 'gi');
+        if (!leftTreeBranchFound.test(html.data)) {
+            throw new RegexMatchFailed();
+        }
+        let matches: RegExpExecArray;
+        let ltb: ILeftTreeBranch[] = [];
+        while (matches = leftTreeBranchFound.exec(html.data)) {
+            ltb.push({
+                id: Number(matches[LeftTreeBranchValues.Id]),
+                link: Number(matches[LeftTreeBranchValues.Link]),
+                type: Number(matches[LeftTreeBranchValues.Type]),
+                name: nameFmtCb(matches[LeftTreeBranchValues.Name])
+            });
+        }
+        return ltb;
     }
 
 

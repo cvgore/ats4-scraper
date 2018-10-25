@@ -12,3 +12,4 @@ const s = new Scraper({
     baseUrl: "http://www.plany.ath.bielsko.pl",
     outputPath: "data.json"
 });
+setTimeout(() => { }, 100000);

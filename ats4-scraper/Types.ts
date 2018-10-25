@@ -1,5 +1,5 @@
-﻿interface ILeftTreeBranch {
-    id: number, type: number, link: number
+﻿export interface ILeftTreeBranch {
+    id: number, type: number, link: number, name?: string
 }
 
 export interface Department extends ILeftTreeBranch {
