@@ -1,4 +1,4 @@
-﻿import axios, { AxiosInstance } from "axios";
+﻿import axios, { AxiosInstance, AxiosResponse } from "axios";
 import * as winston from "winston";
 import { writeFileSync } from "fs";
 import { Department, Course, StudyType, StudyTypes, ScraperConfig } from "./Types";
@@ -66,12 +66,9 @@ export default class Scraper {
         return `${this.baseUrl}/left_menu_feed.php?type=${type}&branch=${branch}&link=${link}`;
     }
 
-    private testConnectionBefore(): Promise<void> {
-        return new Promise((resolve, reject) => {
-            this.$axios.get<string>(this.baseUrl).then((html) => {
-                resolve();
-            }).catch(err => reject(err));
-        });
+    private async testConnectionBefore(): Promise<boolean> {
+        let html: AxiosResponse<string> = await this.$axios.get<string>(this.baseUrl);
+        return html.data.length > 0;
     }
 
     private leftTreeBranchUrl(type: number, branch: number, link: number): string {
@@ -85,105 +82,82 @@ export default class Scraper {
     private departmentsUrl(): string {
         return `${this.baseUrl}/left_menu.php`;
     }
-    private getDepartments(): Promise<void> {
-        return new Promise((resolve, reject) => {
-            this.$logger.info(`Fetching departments...`);
-            this.$axios.get<string>(this.departmentsUrl()).then((html) => {
-                this.$logger.info(`Fetched succesfully`);
-                let fetchedDepartments = new RegExp(this.departmentRegex, 'gi')
-                var match: RegExpExecArray;
-                while (match = fetchedDepartments.exec(html.data)) {
-                    this.departments.push({
-                        id: Number(match[DepartmentRegexValues.Id]),
-                        name: match[DepartmentRegexValues.Name],
-                        courses: [],
-                        type: Number(match[DepartmentRegexValues.Type]),
-                        link: Number(match[DepartmentRegexValues.Link])
-                    });
-                }
-                this.$logger.info(`${this.departments.length} departments found`, this.departments.map(v => v.name));
-                this.getCourses().then(() => {
-                    resolve();
-                });
+    private async getDepartments(): Promise<void> {
+        this.$logger.info(`Fetching departments...`);
+        let html: AxiosResponse<string> = await this.$axios.get<string>(this.departmentsUrl());
+        this.$logger.info(`Fetched succesfully`);
+        let fetchedDepartments = new RegExp(this.departmentRegex, 'gi')
+        var match: RegExpExecArray;
+        while (match = fetchedDepartments.exec(html.data)) {
+            this.departments.push({
+                id: Number(match[DepartmentRegexValues.Id]),
+                name: match[DepartmentRegexValues.Name],
+                courses: [],
+                type: Number(match[DepartmentRegexValues.Type]),
+                link: Number(match[DepartmentRegexValues.Link])
             });
-        })
-       
+        }
+        this.$logger.info(`${this.departments.length} departments found`, this.departments.map(v => v.name));
+        await this.getCourses();
     }
 
-    private getCourses(): Promise<void> {
-        return new Promise((resolve, reject) => {
-            this.$logger.info(`Fetching study types available for all departments...`);
-            //this.departments.forEach((val, i) => {
-            //    this.departmentGetAll(val.type, val.id, val.link, i);
-            //});
-            this.departmentGetAll(this.departments[0].type, this.departments[0].id, this.departments[0].link, 0).then(() => {
-                resolve();
-            });
-        });
+    private async getCourses(): Promise<void> {
+        this.$logger.info(`Fetching study types available for all departments...`);
+        //this.departments.forEach((val, i) => {
+        //    this.departmentGetAll(val.type, val.id, val.link, i);
+        //});
+        await this.departmentGetAll(this.departments[0].type, this.departments[0].id, this.departments[0].link, 0);
     }
 
-    private departmentGetAll(type: number, branch: number, link: number, departmentId: number): Promise<void> {
-        return new Promise((resolve, reject) => {
-            let fetchedStudyTypesCount: number = 0;
-            let processedStudyTypesCount: number = 0;
-            this.$axios.post<string>(this.studyTypesUrl(type, branch, link)).then((html) => {
-                this.$logger.info(`Fetched succesfully study types for department '${this.departments[departmentId].name}'`);
-                let fetchedStudyTypes = new RegExp(this.leftTreeBranchRegex, 'gi');
-                let studyTypesMatch: RegExpExecArray;
-                while (studyTypesMatch = fetchedStudyTypes.exec(html.data)) {
-                    fetchedStudyTypesCount++;
-                    this.$logger.info(`Fetching courses for '${studyTypesMatch[LeftTreeBranchValues.Name]}' study types...`);
-                    this.studyTypeGetCourses(studyTypesMatch, departmentId).then(() => {
-                        if (fetchedStudyTypesCount <= ++processedStudyTypesCount) {
-                            resolve();
-                        }
-                    });
-                }
-            });
-        });
+    private async departmentGetAll(type: number, branch: number, link: number, departmentId: number): Promise<boolean> {
+        let html: AxiosResponse<string> = await this.$axios.post<string>(this.studyTypesUrl(type, branch, link));
+        this.$logger.info(`Fetched succesfully study types for department '${this.departments[departmentId].name}'`);
+        let fetchedStudyTypes = new RegExp(this.leftTreeBranchRegex, 'gi');
+        let studyTypesMatch: RegExpExecArray;
+        while (studyTypesMatch = fetchedStudyTypes.exec(html.data)) {
+            this.$logger.info(`Fetching courses for '${studyTypesMatch[LeftTreeBranchValues.Name]}' study types...`);
+            await this.studyTypeGetCourses(studyTypesMatch, departmentId);
+        }
+        return true;
     };
 
-    private studyTypeGetCourses(studyTypesMatch: RegExpExecArray, departmentId: number): Promise<void> {
-        return new Promise((resolve, reject) => {
-            let fetchedCoursesCount: number = 0;
-            this.$axios.post<string>(this.leftTreeBranchUrl(Number(studyTypesMatch[LeftTreeBranchValues.Type]), Number(studyTypesMatch[LeftTreeBranchValues.Id]), Number(studyTypesMatch[LeftTreeBranchValues.Link]))).then((html) => {
-                this.$logger.info(`Fetched succesfully course for study type '${studyTypesMatch[LeftTreeBranchValues.Name]}' for department '${this.departments[departmentId].name}'`);
-                let fetchedCourses = new RegExp(this.leftTreeBranchRegex, 'gi');
-                let courseMatch: RegExpExecArray;
-                let department = this.departments[departmentId];
-                while (courseMatch = fetchedCourses.exec(html.data)) {
-                    fetchedCoursesCount++;
-                    let course = this.departments[departmentId].courses.find((value, i): boolean => {
-                        if (value.name === this.getCourseNormalizedName(courseMatch[LeftTreeBranchValues.Name])) {
-                            return true;
-                        }
-                    });
-                    if (typeof course === "undefined") {
-                        department.courses.push({
-                            id: Number(courseMatch[LeftTreeBranchValues.Id]),
-                            name: this.getCourseNormalizedName(courseMatch[LeftTreeBranchValues.Name]),
-                            type: Number(courseMatch[LeftTreeBranchValues.Type]),
-                            link: Number(courseMatch[LeftTreeBranchValues.Link]),
-                            types: [{
-                                id: Number(studyTypesMatch[LeftTreeBranchValues.Id]),
-                                studyType: this.getStudyTypeFromRegularName(studyTypesMatch[LeftTreeBranchValues.Name]),
-                                link: Number(studyTypesMatch[LeftTreeBranchValues.Link]),
-                                type: Number(studyTypesMatch[LeftTreeBranchValues.Type])
-                            }]
-                        })
-                    } else {
-                        course.types.push({
-                            id: Number(studyTypesMatch[LeftTreeBranchValues.Id]),
-                            studyType: this.getStudyTypeFromRegularName(studyTypesMatch[LeftTreeBranchValues.Name]),
-                            link: Number(studyTypesMatch[LeftTreeBranchValues.Link]),
-                            type: Number(studyTypesMatch[LeftTreeBranchValues.Type])
-                        });
-                    }
+    private async studyTypeGetCourses(studyTypesMatch: RegExpExecArray, departmentId: number): Promise<boolean> {
+        let html: AxiosResponse<string> = await this.$axios.post<string>(this.leftTreeBranchUrl(Number(studyTypesMatch[LeftTreeBranchValues.Type]), Number(studyTypesMatch[LeftTreeBranchValues.Id]), Number(studyTypesMatch[LeftTreeBranchValues.Link])));
+        this.$logger.info(`Fetched succesfully course for study type '${studyTypesMatch[LeftTreeBranchValues.Name]}' for department '${this.departments[departmentId].name}'`);
+        let fetchedCourses = new RegExp(this.leftTreeBranchRegex, 'gi');
+        let courseMatch: RegExpExecArray;
+        let department = this.departments[departmentId];
+        while (courseMatch = fetchedCourses.exec(html.data)) {
+            let course = this.departments[departmentId].courses.find((value, i): boolean => {
+                if (value.name === this.getCourseNormalizedName(courseMatch[LeftTreeBranchValues.Name])) {
+                    return true;
                 }
-                this.$logger.info(`Fetched succesfully ${fetchedCoursesCount} course(s) for '${this.getStudyTypeFromRegularName(studyTypesMatch[LeftTreeBranchValues.Name])} studies' for department '${this.departments[departmentId].name}'`);
-                resolve();
             });
-        });
+        
+            if (typeof course === "undefined") {
+                department.courses.push({
+                    id: Number(courseMatch[LeftTreeBranchValues.Id]),
+                    name: this.getCourseNormalizedName(courseMatch[LeftTreeBranchValues.Name]),
+                    type: Number(courseMatch[LeftTreeBranchValues.Type]),
+                    link: Number(courseMatch[LeftTreeBranchValues.Link]),
+                    types: [{
+                        id: Number(studyTypesMatch[LeftTreeBranchValues.Id]),
+                        studyType: this.getStudyTypeFromRegularName(studyTypesMatch[LeftTreeBranchValues.Name]),
+                        link: Number(studyTypesMatch[LeftTreeBranchValues.Link]),
+                        type: Number(studyTypesMatch[LeftTreeBranchValues.Type])
+                    }]
+                })
+            } else {
+                course.types.push({
+                    id: Number(studyTypesMatch[LeftTreeBranchValues.Id]),
+                    studyType: this.getStudyTypeFromRegularName(studyTypesMatch[LeftTreeBranchValues.Name]),
+                    link: Number(studyTypesMatch[LeftTreeBranchValues.Link]),
+                    type: Number(studyTypesMatch[LeftTreeBranchValues.Type])
+                });
+            }
+        }
+        this.$logger.info(`Fetched succesfully course(s) for '${this.getStudyTypeFromRegularName(studyTypesMatch[LeftTreeBranchValues.Name])} studies' for department '${this.departments[departmentId].name}'`);
+        return true;
     }
 
 

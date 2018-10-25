@@ -68,7 +68,7 @@
     <TypeScriptCompile Include="Scraper.ts">
       <SubType>Code</SubType>
     </TypeScriptCompile>
-    <TypeScriptCompile Include="Types.d.ts">
+    <TypeScriptCompile Include="Types.ts">
       <SubType>Code</SubType>
     </TypeScriptCompile>
   </ItemGroup>
