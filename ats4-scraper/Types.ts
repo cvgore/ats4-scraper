@@ -1,5 +1,7 @@
-﻿export interface ILeftTreeBranch {
-    id: number, type: number, link: number, name?: string
+﻿import { Script } from "vm";
+
+export interface ILeftTreeBranch {
+    id: number, type: number, name?: string
 }
 
 export interface Department extends ILeftTreeBranch {
@@ -7,13 +9,7 @@ export interface Department extends ILeftTreeBranch {
 }
 
 export interface Course extends ILeftTreeBranch {
-    name: string, types: StudyType[],
-}
-
-export interface StudyType extends ILeftTreeBranch {
-    studyType: {
-        [key in StudyTypes]?: Degree[]
-    },
+    name: string, studyTypes: Map<StudyTypes, Degree[]>,
 }
 
 export interface Semester extends ILeftTreeBranch {
@@ -60,7 +56,21 @@ export interface ScraperConfig {
     baseUrl: string,
     outputPath: string,
     requestsPerMinute?: {
-        iCalGrab: 12,
-        htmlGrab: 60
+        iCalGrab: number, // 12
+        htmlGrab: number // 60
     }
+}
+
+export interface RecurseScraperConfig extends ScraperConfig {
+    maxRecursionDepth: number // 6
+}
+
+export interface RecurseScrappedData extends ILeftTreeBranch {
+    siblings?: RecurseScrappedData[],
+    hasPlan: boolean
+}
+
+export interface RecurseRootData {
+    siblings: RecurseScrappedData[],
+    name: string,
 }

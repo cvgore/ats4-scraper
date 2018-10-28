@@ -1,7 +1,7 @@
 ﻿import axios, { AxiosInstance, AxiosResponse } from "axios";
 import * as winston from "winston";
 import { writeFileSync } from "fs";
-import { Department, Course, StudyType, StudyTypes, ScraperConfig, ClassesTypes, ILeftTreeBranch } from "./Types";
+import { Department, Course, StudyTypes, ScraperConfig, ClassesTypes, ILeftTreeBranch, Semester, Degree, ExerciseGroup } from "./Types";
 import RegexMatchFailed from "./Errors/RegexMatchFailed";
 
 enum DepartmentRegexValues {
@@ -15,15 +15,16 @@ enum LeftTreeBranchValues {
     Id = 1,
     Type,
     Link,
-    Name,
-    PlanType
+    PlanType,
+    AnchorName,
+    Name
 }
 
 export default class Scraper {
-    public static readonly version = "0.0.1";
+    public static readonly version = "0.1.0";
     private readonly departmentRegex: RegExp = /onclick="branch\((\d+),(\d+),(\d+),'([a-z ąćżśłóźńę,-]+)'\);">/gi;
     private readonly planRegex: RegExp = /<li><img src="[^"]*" alt="" \/> <a href="plan\.php\?type=(\d+)&amp;id=(\d+)" target="[^"]*">([0-9a-z ąćżśłóźńę,\/-]+)<\/a><\/li>/gi;
-    private readonly leftTreeBranchRegex: RegExp = /<li[^>]*><img\s+src='[^']*'\s+alt='[^']*'\s+id='[^']*'\s+onclick="\s+get_left_tree_branch\(\s+'(\d+)',\s+'img_\d+',\s+'div_\d+',\s+'(\d+)',\s+'?(\d+)'\s+\); "\s+onmouseover="[^"]*"[^>]*>\s+(?:<a\s+href="plan\.php\?type=(\d+)&amp;id=(\d+)"[^>]+>[^<]+<\/a>|([a-z ąćżśłóźńę,-]+))<div[^>]*><\/div><\/li>/gi;
+    private readonly leftTreeBranchRegex: RegExp = /<li[^>]*><img\s+src='[^']*'\s+alt='[^']*'\s+id='[^']*'\s+onclick="\s+get_left_tree_branch\(\s+'(\d+)',\s+'img_\d+',\s+'div_\d+',\s+'(\d+)',\s+'?(\d+)'\s+\); "\s+onmouseover="[^"]*"[^>]*>\s+(?:<a\s+href="plan\.php\?type=(\d+)&amp;id=\d+"[^>]*>\s*([a-z ąćżśłóźńę,\/-]+)<\/a>|\s*([a-z ąćżśłóźńę,-\/]+))<div[^>]*><\/div><\/li>/gi;
     private baseUrl: string;
     
     private $axios: AxiosInstance;
@@ -65,6 +66,14 @@ export default class Scraper {
         
     }
 
+    private async wait(ms: number): Promise<boolean> {
+        return new Promise<boolean>((resolve, reject) => {
+            setTimeout(() => {
+                resolve(true);
+            }, ms);
+        });
+    }
+
     private studyTypesUrl(type: number, branch: number, link: number): string {
         return `${this.baseUrl}/left_menu_feed.php?type=${type}&branch=${branch}&link=${link}`;
     }
@@ -101,6 +110,8 @@ export default class Scraper {
             });
         }
         this.$logger.info(`${this.departments.length} departments found`, this.departments.map(v => v.name));
+        this.$logger.info(`Awaiting 5s before next request`);
+        await this.wait(5000);
         await this.getCourses();
     }
 
@@ -112,6 +123,22 @@ export default class Scraper {
         await this.departmentGetAll(this.departments[0].type, this.departments[0].id, this.departments[0].link, 0);
     }
 
+    private async getGroups(): Promise<void> {
+        this.$logger.info(`Fetching all groups...`);
+        await this.wait(1000);
+        for (let department of this.departments) {
+            for (let course of department.courses) {
+                for (let studyType in course.studyTypes) {
+                    for (let semester of (course.studyTypes[studyType] as Degree).semesters) {
+                        semester.classGroups = [];
+                        semester.classGroups = await this.getLeftTreeBranchContents(semester.type, semester.id, semester.link) as ExerciseGroup[];
+                        return;
+                    }
+                }
+            }
+        }
+    }
+
     private async departmentGetAll(type: number, branch: number, link: number, departmentId: number): Promise<boolean> {
         let html: AxiosResponse<string> = await this.$axios.post<string>(this.studyTypesUrl(type, branch, link));
         this.$logger.info(`Fetched succesfully study types for department '${this.departments[departmentId].name}'`);
@@ -119,8 +146,11 @@ export default class Scraper {
         let studyTypesMatch: RegExpExecArray;
         while (studyTypesMatch = fetchedStudyTypes.exec(html.data)) {
             this.$logger.info(`Fetching courses for '${studyTypesMatch[LeftTreeBranchValues.Name]}' study types...`);
+            this.$logger.info(`Awaiting 1s before next request`);
+            await this.wait(1000);
             await this.studyTypeGetCourses(studyTypesMatch, departmentId);
         }
+        await this.getGroups();
         return true;
     };
 
@@ -145,26 +175,18 @@ export default class Scraper {
                 department.courses.push({
                     id, link, type,
                     name: this.getCourseNormalizedName(courseMatch[LeftTreeBranchValues.Name]),
-                    types: [{
-                        id: Number(studyTypesMatch[LeftTreeBranchValues.Id]),
-                        studyType: {
-                            [this.getStudyTypeFromRegularName(studyTypesMatch[LeftTreeBranchValues.Name])]: {
-                                semesters: await this.getLeftTreeBranchContents(type, id, link)
-                            }
-                        },
-                        link: Number(studyTypesMatch[LeftTreeBranchValues.Link]),
-                        type: Number(studyTypesMatch[LeftTreeBranchValues.Type])
-                    }]
-                })
+                    studyTypes: new Map([this.getStudyTypeFromRegularName(studyTypesMatch[LeftTreeBranchValues.Name]) as StudyTypes, [{
+                        id, link, type,
+                        semesters: await this.getLeftTreeBranchContents(type, id, link) as Semester[]
+                    }]])
+                });
             } else {
-                course.types.push({
+                if (typeof course.studyTypes[this.getStudyTypeFromRegularName(studyTypesMatch[LeftTreeBranchValues.Name])] === "undefined") {
+                    course.studyTypes[this.getStudyTypeFromRegularName(studyTypesMatch[LeftTreeBranchValues.Name])] = [];
+                }
+                course.studyTypes[this.getStudyTypeFromRegularName(studyTypesMatch[LeftTreeBranchValues.Name])].push({
                     id, link, type,
-                    studyType: {
-                        [this.getStudyTypeFromRegularName(studyTypesMatch[LeftTreeBranchValues.Name])]: {
-                            semesters: await this.getLeftTreeBranchContents(type, id, link)
-                        }
-                    },
-
+                    semesters: await this.getLeftTreeBranchContents(type, id, link) as Semester[]
                 });
             }
         }
@@ -173,13 +195,14 @@ export default class Scraper {
     }
     private async getLeftTreeBranchContents(type: number, branch: number, link: number, nameFmtCb?: (val: string) => string): Promise<ILeftTreeBranch[]> {
         this.$logger.info(`Request - ${this.leftTreeBranchUrl(type, branch, link)}`);
-        if (typeof nameFmtCb === undefined) {
+        if (typeof nameFmtCb === 'undefined') {
             nameFmtCb = val => val;
         }
         let html: AxiosResponse<string> = await this.$axios.post<string>(this.leftTreeBranchUrl(type, branch, link));
         let leftTreeBranchFound = new RegExp(this.leftTreeBranchRegex, 'gi');
         if (!leftTreeBranchFound.test(html.data)) {
-            throw new RegexMatchFailed();
+            return [];
+            //throw new RegexMatchFailed();
         }
         let matches: RegExpExecArray;
         let ltb: ILeftTreeBranch[] = [];
@@ -196,6 +219,7 @@ export default class Scraper {
 
 
     private getCourseNormalizedName(name: string): string {
+        if (!name) return '';
         return name.replace(/\s[A-Z]{1,2}$/, ``).trim();
     }
 
