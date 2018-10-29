@@ -263,3 +263,6 @@ __pycache__/
 # Keep only TypeScript files
 *.js
 *.js.map
+
+data*.json
+plans/
