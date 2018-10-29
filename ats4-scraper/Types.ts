@@ -58,7 +58,8 @@ export interface ScraperConfig {
     requestsPerMinute?: {
         iCalGrab: number, // 12
         htmlGrab: number // 60
-    }
+    },
+    initialDate: number
 }
 
 export interface RecurseScraperConfig extends ScraperConfig {

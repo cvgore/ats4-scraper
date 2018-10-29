@@ -5,7 +5,7 @@
 
 //ical
 
-import Scraper from "./Scraper";
+//import Scraper from "./Scraper";
 import { setTimeout } from "timers";
 import RecurseScraper from "./Scraper/RecurseScraper";
 import { writeFileSync } from "fs";
@@ -17,9 +17,8 @@ import { writeFileSync } from "fs";
 const s = new RecurseScraper({
     baseUrl: "http://www.plany.ath.bielsko.pl",
     outputPath: "data_2.json",
-    maxRecursionDepth: 7
+    maxRecursionDepth: 7,
+    initialDate: 1316383200000
 });
-s.run().then(() => {
-    writeFileSync("data_2.json", JSON.stringify(s.data));
-});
+s.run();
 setTimeout(() => { }, 100000);
