@@ -1,4 +1,4 @@
-﻿import { ILeftTreeBranch } from "../Types";
+﻿import { ILeftTreeBranch } from "./T";
 
 export default class Plan {
     private _id: number;
@@ -30,4 +30,8 @@ export default class Plan {
     public get type(): number {
         return this._type;
     }
+
+    //public async parse(): Promise<ParsedPlan {
+
+    //}
 }

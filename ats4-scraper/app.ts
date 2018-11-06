@@ -18,7 +18,7 @@ const s = new RecurseScraper({
     baseUrl: "http://www.plany.ath.bielsko.pl",
     outputPath: "data_2.json",
     maxRecursionDepth: 7,
-    initialDate: 1316383200000
+    initialDate: 1314050400000
 });
 s.run();
 setTimeout(() => { }, 100000);

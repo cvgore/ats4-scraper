@@ -192,6 +192,7 @@ export default class RecurseScraper {
                 hasPlan: noMoreBranchesToExpand ? noMoreBranchesToExpand : !!this.getMatchResult(match, LeftTreeBranchRegexValues.Link),
                 siblings: siblingsData.length > 0 ? siblingsData : undefined,
             });
+            break;
         }
         return data;
     }
