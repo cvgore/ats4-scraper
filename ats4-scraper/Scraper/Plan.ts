@@ -5,6 +5,7 @@ export default class Plan {
     private _name: string;
     private _type: number;
     private _weekNo: number;
+    private _path: number;
     private planUrl(): string {
         return `plan.php?type=${this.type}&id=${this.id}&cvsfile=true&w=${this._weekNo}`;
     }
