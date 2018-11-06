@@ -25,6 +25,16 @@ export default class PlanScrapper {
         return `${this._baseUrl}/${url}`;
     }
 
+    private async wait(ms: number): Promise<boolean> {
+        return new Promise<boolean>((resolve, reject) => {
+            this.$logger.info(`Waiting ${ms} ms...`);
+            setTimeout(() => {
+                resolve(true);
+            }, ms);
+        });
+    }
+
+
     private recurseForEach = (el: RecurseScrappedData | RecurseRootData) => {
         if (el.siblings) {
             return el.siblings.forEach(this.recurseForEach);
@@ -36,7 +46,7 @@ export default class PlanScrapper {
 
     public async run() {
         this.scrappedData.forEach(this.recurseForEach);
-        if (!await this.everyAsync(this.planData, this.fetchForAll, this)) {
+        if (!await this.everyAsyncWaitable(this.planData, this.fetchForAll, this)) {
             throw new PlanFetchFailedError(`Couldn't fetch all plans successfully`);
         }
         this.$logger.info(`Successfully fetched all plans data's`);
@@ -48,15 +58,18 @@ export default class PlanScrapper {
             this.$logger.info(`Fetching plan - ${this.baseUrl(plan.url)}`);
             iCalData = await this.$axios.get<string>(this.baseUrl(plan.url));
         } catch (ex) {
-            this.$logger.warn(`An error occured while trying to get plan ${plan.id}`, ex);
+            this.$logger.error(`An error occured while trying to get plan ${plan.id}`, ex);
             return false;
         }
         writeFileSync(`plans/${plan.id}.ics`, iCalData.data);
         return true;
     }
 
-    private async everyAsync<T>(array: T[], callback: (value:T, index: number, array: T[]) => Promise<boolean>, thisArg?: any): Promise<boolean> {
+    private async everyAsyncWaitable<T>(array: T[], callback: (value:T, index: number, array: T[]) => Promise<boolean>, thisArg?: any, waitTimeMs: number = 2000): Promise<boolean> {
         for (let i = 0; i < array.length; i++) {
+            if (i > 0 && waitTimeMs > 0) {
+                await this.wait(waitTimeMs);
+            }
             if (!await callback.apply(thisArg || this, [array[i], i, array]))
                 return false;
         }

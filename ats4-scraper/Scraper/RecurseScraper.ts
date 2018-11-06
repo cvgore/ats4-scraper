@@ -108,12 +108,12 @@ export default class RecurseScraper {
             });
             break;
         }
+        this.$logger.info(`Fetched all data, writing to file`);
         writeFileSync(this.config.outputPath, JSON.stringify(this.scrappedData));
         await this.wait(5000);
         this.$logger.info(`Creating PlanScrapper instance`);
         const ps = new PlanScrapper(this.scrappedData, this.$axios, this.$logger, this.config.baseUrl, this.currentWeekNo);
         await ps.run();
-        this.$logger.info("Fetched all data");
     }
 
     private resetIndex(regex: RegExp): void {
@@ -183,7 +183,7 @@ export default class RecurseScraper {
             let type = this.getMatchResult(match, noMoreBranchesToExpand ? PlanRegexValues.Type : LeftTreeBranchRegexValues.Type);
             let siblingsData: RecurseScrappedData[] = [];
             if (!noMoreBranchesToExpand) {
-                await this.wait(2000);
+                await this.wait(5000);
                 siblingsData = await this.getLeftTreeBranchContents(type, id, recurseDepth);
             }
             data.push({
