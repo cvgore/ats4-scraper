@@ -85,6 +85,9 @@
     <TypeScriptCompile Include="Plan.ts">
       <SubType>Code</SubType>
     </TypeScriptCompile>
+    <TypeScriptCompile Include="Scraper\PlanParser.ts">
+      <SubType>Code</SubType>
+    </TypeScriptCompile>
     <TypeScriptCompile Include="Scraper\PlanScraper.ts">
       <SubType>Code</SubType>
     </TypeScriptCompile>
