@@ -41,6 +41,7 @@ export default class RecurseScraper {
     private $axios: AxiosInstance;
     private scrappedData: RecurseRootData[] = [];
     private $logger: winston.Logger;
+    private dataFetchCount: number = 0;
 
     constructor(config: RecurseScraperConfig) {
         if (typeof config.baseUrl === "undefined") {
@@ -66,7 +67,7 @@ export default class RecurseScraper {
         this.$axios = axios.create({
             headers: {
                 //'User-Agent': `ATS4-Scrapper/${RecurseScraper.version} (https://github.com/cvgore/ats4-scrapper)`
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:62.0) Gecko/20100101 Firefox/62.0'
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:21.37) Gecko/20100101 Firefox/13.37'
             }
         });
         this.$logger.info(`Axios HTTP client created`);
@@ -107,6 +108,7 @@ export default class RecurseScraper {
             });
             break;
         }
+        this.$logger.info(`Fetched all data, writing to file`);
         writeFileSync(this.config.outputPath, JSON.stringify(this.scrappedData));
         await this.wait(5000);
         this.$logger.info(`Creating PlanScrapper instance`);
@@ -141,7 +143,7 @@ export default class RecurseScraper {
 
     private async testConnectionBefore(): Promise<boolean> {
         try {
-            let html: AxiosResponse<string> = await this.$axios.get<string>(this.config.baseUrl);
+            await this.$axios.get<string>(this.config.baseUrl);
             return true;
         } catch (ex) {
             return false;
@@ -155,15 +157,13 @@ export default class RecurseScraper {
     private departmentsUrl(): string {
         return `${this.config.baseUrl}/left_menu.php`;
     }
-    private async getLeftTreeBranchContents(type: number, branch: number, nameFmtCb?: (val: string) => string, recurseDepth: number = 1): Promise<RecurseScrappedData[]> {
+    private async getLeftTreeBranchContents(type: number, branch: number, recurseDepth: number = 1): Promise<RecurseScrappedData[]> {
         if (++recurseDepth > this.config.maxRecursionDepth) {
             throw new TooMuchRecursionError(`Max recursion depth limit exceeded - ${this.config.maxRecursionDepth} was set, current depth - ${recurseDepth}`);
         }
+        this.dataFetchCount++;
         let url: string = this.leftTreeBranchUrl(type, branch);
         this.$logger.info(`Requesting leftTreeBranch data - ${url}`);
-        if (typeof nameFmtCb === 'undefined') {
-            nameFmtCb = val => val;
-        }
         let html: AxiosResponse<string> = await this.$axios.post<string>(url);
         let foundData = new RegExp(this.leftTreeBranchRegex, 'gi');
         let data: RecurseScrappedData[] = [];
@@ -183,16 +183,16 @@ export default class RecurseScraper {
             let type = this.getMatchResult(match, noMoreBranchesToExpand ? PlanRegexValues.Type : LeftTreeBranchRegexValues.Type);
             let siblingsData: RecurseScrappedData[] = [];
             if (!noMoreBranchesToExpand) {
-                await this.wait(2000);
-                siblingsData = await this.getLeftTreeBranchContents(type, id, undefined, recurseDepth);
+                await this.wait(5000);
+                siblingsData = await this.getLeftTreeBranchContents(type, id, recurseDepth);
             }
             data.push({
                 id, type,
-                name: nameFmtCb(this.getMatchResultString(match, noMoreBranchesToExpand ? PlanRegexValues.Name : LeftTreeBranchRegexValues.Name) || this.getMatchResultString(match, LeftTreeBranchRegexValues.AnchorName)),
+                name: this.getMatchResultString(match, noMoreBranchesToExpand ? PlanRegexValues.Name : LeftTreeBranchRegexValues.Name) || this.getMatchResultString(match, LeftTreeBranchRegexValues.AnchorName),
                 hasPlan: noMoreBranchesToExpand ? noMoreBranchesToExpand : !!this.getMatchResult(match, LeftTreeBranchRegexValues.Link),
                 siblings: siblingsData.length > 0 ? siblingsData : undefined,
             });
-            return data;
+            break;
         }
         return data;
     }
