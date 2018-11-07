@@ -73,7 +73,7 @@
     <TypeScriptCompile Include="Errors\UnknownError.ts">
       <SubType>Code</SubType>
     </TypeScriptCompile>
-    <TypeScriptCompile Include="Parsers\PlanParser.ts">
+    <TypeScriptCompile Include="Parsers\IcsToJson.ts">
       <SubType>Code</SubType>
     </TypeScriptCompile>
     <TypeScriptCompile Include=".QueueRequest.ts">

@@ -4,7 +4,7 @@ import { promisify } from "util";
 import * as ical from "node-ical";
 import * as moment from "moment";
 
-export default class PlanParser {
+export default class IcsToJson {
     private inputPath: string;
     private outputPath: string;
     constructor(inputPath: string, outputPath: string) {
@@ -21,9 +21,10 @@ export default class PlanParser {
                 return false;
             }
             return true;
-        }).sort((a, b) => {
+        })
+        .sort((a, b) => {
             return a.start.getTime() - b.start.getTime();
-        });
+            });
 
         await promisify(writeFile)(`${this.outputPath}\\${plan.id}.json`, JSON.stringify(validIcsData));
         return validIcsData;
