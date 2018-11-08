@@ -1,5 +1,4 @@
-﻿
-//import * as fs from 'fs';
+﻿//import * as fs from 'fs';
 //import * as path from 'path';
 //import * as ical from 'ical';
 
@@ -16,7 +15,7 @@ import { writeFileSync } from "fs";
 //});
 const s = new RecurseScraper({
     baseUrl: "http://www.plany.ath.bielsko.pl",
-    outputPath: "data_2.json",
+    outputPath: "data.json",
     maxRecursionDepth: 7,
     initialDate: 1314050400000
 });

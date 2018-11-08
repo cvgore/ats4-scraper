@@ -41,6 +41,7 @@ export default class PlanScraper {
         }
         if (el.hasOwnProperty("hasPlan") && (el as RecurseScrappedData).hasPlan === true) {
             this.planData.push(new Plan((el as RecurseScrappedData).type, (el as RecurseScrappedData).id, el.name, this.currentWeekNo));
+            this.planData[this.planData.length - 1].parse();
         }
     }
 

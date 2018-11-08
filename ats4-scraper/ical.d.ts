@@ -1,8 +1,8 @@
-﻿declare module "node-ical" {
+﻿declare module "ical" {
     export function parseICS(str: string): ICalData;
-    export function parseICS(str: string, cb: (err: Error, data: ICalData) => void): void;
+    //export function parseICS(str: string, cb: (err: Error, data: ICalData) => void): void;
     export function parseFile(filename: string): ICalData;
-    export function parseFile(filename: string, cb: (err: Error, data: ICalData) => void): void;
+    //export function parseFile(filename: string, cb: (err: Error, data: ICalData) => void): void;
     export function fromURL(url: string, options: object, cb: (err: Error, data: ICalData) => void): void;
 
     export interface ICalData {

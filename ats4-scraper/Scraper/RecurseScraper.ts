@@ -1,6 +1,7 @@
 ﻿import axios, { AxiosInstance, AxiosResponse, AxiosError } from "axios";
 import * as winston from "winston";
-import { writeFileSync } from "fs";
+import { writeFileSync, existsSync, readFile } from "fs";
+import { promisify } from "util";
 import { ILeftTreeBranch, RecurseScraperConfig, RecurseScrappedData, RecurseRootData } from "../Types";
 import RegexMatchFailedError from "../Errors/RegexMatchFailedError";
 import MissingRequiredParameter from "../Errors/MissingRequiredParameter";
@@ -66,8 +67,7 @@ export default class RecurseScraper {
         this.$logger.info(`Today is ${this.currentWeekNo} weeks since ${moment(this.config.initialDate).toISOString()}`);
         this.$axios = axios.create({
             headers: {
-                //'User-Agent': `ATS4-Scrapper/${RecurseScraper.version} (https://github.com/cvgore/ats4-scrapper)`
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:21.37) Gecko/20100101 Firefox/13.37'
+                'User-Agent': `ATS4-Scrapper/${RecurseScraper.version}:(https://github.com/cvgore/ats4-scrapper)`
             }
         });
         this.$logger.info(`Axios HTTP client created`);
@@ -78,39 +78,46 @@ export default class RecurseScraper {
     }
 
     public async run(): Promise<boolean> {
-        if (!await this.testConnectionBefore()) {
-            this.$logger.error(`No response from server received, halting!`);
-            return false;
+        if (!existsSync(this.config.outputPath)) {
+            if (!await this.testConnectionBefore()) {
+                this.$logger.error(`No response from server received, halting!`);
+                return false;
+            }
+            this.$logger.info(`Successful connection test to ${this.config.baseUrl}`);
+
+            let html: AxiosResponse<string> = await this.$axios.get<string>(this.departmentsUrl());
+
+            let fetchedDepartments: RegExp = new RegExp(this.departmentRegex, 'gi');
+            var match: RegExpExecArray;
+
+            if (!fetchedDepartments.test(html.data)) {
+                throw new RegexMatchFailedError(`Regex for departments failed`);
+            }
+
+            this.resetIndex(fetchedDepartments);
+
+            while (match = fetchedDepartments.exec(html.data)) {
+                await this.wait(1000);
+                let siblings: RecurseScrappedData[] = await this.getLeftTreeBranchContents(
+                    this.getMatchResult(match, DepartmentRegexValues.Type),
+                    this.getMatchResult(match, DepartmentRegexValues.Branch),
+                );
+
+                this.scrappedData.push({
+                    name: this.getMatchResultString(match, DepartmentRegexValues.Name),
+                    siblings
+                });
+                break;
+            }
+            this.$logger.info(`Fetched all data, writing to file`);
+            writeFileSync(this.config.outputPath, JSON.stringify(this.scrappedData));
+            await this.wait(5000);
+        } else {
+            this.$logger.info(`Previously fetched main file found, reusing`);
+            let file: Buffer = await promisify(readFile)(this.config.outputPath);
+            this.scrappedData = JSON.parse(file.toString()) as RecurseRootData[];
+            this.$logger.info(`Successfully parsed main file`);
         }
-        this.$logger.info(`Successful connection test to ${this.config.baseUrl}`);
-
-        let html: AxiosResponse<string> = await this.$axios.get<string>(this.departmentsUrl());
-
-        let fetchedDepartments: RegExp = new RegExp(this.departmentRegex, 'gi');
-        var match: RegExpExecArray;
-
-        if (!fetchedDepartments.test(html.data)) {
-            throw new RegexMatchFailedError(`Regex for departments failed`);
-        }
-
-        this.resetIndex(fetchedDepartments);
-
-        while (match = fetchedDepartments.exec(html.data)) {
-            await this.wait(1000);
-            let siblings: RecurseScrappedData[] = await this.getLeftTreeBranchContents(
-                this.getMatchResult(match, DepartmentRegexValues.Type),
-                this.getMatchResult(match, DepartmentRegexValues.Branch),
-            );
-
-            this.scrappedData.push({
-                name: this.getMatchResultString(match, DepartmentRegexValues.Name),
-                siblings
-            });
-            break;
-        }
-        this.$logger.info(`Fetched all data, writing to file`);
-        writeFileSync(this.config.outputPath, JSON.stringify(this.scrappedData));
-        await this.wait(5000);
         this.$logger.info(`Creating PlanScrapper instance`);
         const ps = new PlanScrapper(this.scrappedData, this.$axios, this.$logger, this.config.baseUrl, this.currentWeekNo);
         await ps.run();

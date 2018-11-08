@@ -62,6 +62,12 @@ export interface ScraperConfig {
     initialDate: number
 }
 
+export interface PlanData {
+    name: string,
+    starts: Date,
+    lasts: number // ms
+}
+
 export interface RecurseScraperConfig extends ScraperConfig {
     maxRecursionDepth: number // 6
 }

@@ -1,4 +1,5 @@
-﻿import { ILeftTreeBranch } from "./T";
+﻿import { ILeftTreeBranch, PlanData } from "./Types";
+import IcsToJson from "./Parsers/IcsToJson";
 
 export default class Plan {
     private _id: number;
@@ -32,7 +33,8 @@ export default class Plan {
         return this._type;
     }
 
-    //public async parse(): Promise<ParsedPlan {
-
-    //}
+    public async parse(): Promise<PlanData[]> {
+        let data = new IcsToJson(`plans/`, `plans/`);
+        return await data.parse(this);
+    }
 }
