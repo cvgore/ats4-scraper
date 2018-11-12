@@ -7,7 +7,7 @@ Goes through left_menu.php and fetches all departments and courses.
 Since it is very early alpha, there might be breaking changes in api, also there are some major/minor bugs, PR welcome.
 
 # Usage
-
+_For now, this is the only solution_
 ```javascript
 import { RecurseScraper } from "ats4-scraper";
 // const RecurseScraper = require("ats4-scraper");
