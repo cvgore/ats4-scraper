@@ -40,7 +40,6 @@
       <SubType>Code</SubType>
     </Content>
     <Content Include="package.json" />
-    <Content Include="README.md" />
     <Content Include="tsconfig.json" />
     <TypeScriptCompile Include="Errors\MissingRequiredParameter.ts">
       <SubType>Code</SubType>
