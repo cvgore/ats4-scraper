@@ -1,5 +1,6 @@
 ﻿import { ILeftTreeBranch, PlanData } from "./Types";
 import IcsToJson from "./Parsers/IcsToJson";
+import ics from "icsparser";
 
 export default class Plan {
     private _id: number;

@@ -1,7 +1,7 @@
 ﻿import Plan from "../Plan";
 import { readFile, writeFile, existsSync } from "fs";
 import { promisify } from "util";
-import * as ical from "ical";
+import ics from "icsparser";
 import * as moment from "moment";
 import { PlanData } from "../Types";
 
@@ -11,11 +11,12 @@ export default class IcsToJson {
     constructor(inputPath: string, outputPath: string) {
         this.inputPath = inputPath;
         this.outputPath = outputPath;
+        ics()
     }
 
     private async parseICS(str: string): Promise<ical.ICalData> {
         return new Promise<ical.ICalData>((resolve, reject) => {
-            let data: ical.IC0.0alData = ical.parseICS(str);
+            let data: ical.ICalData = ical.parseICS(str);
             resolve(data);
         });
     }
