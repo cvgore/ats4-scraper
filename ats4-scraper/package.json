@@ -1,10 +1,10 @@
 {
   "name": "ath-tt-scrapper",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "ath-tt-scrapper",
   "main": "app.js",
   "author": {
-    "name": ""
+    "name": "cvgore"
   },
   "devDependencies": {
     "@types/node": "^8.0.14"

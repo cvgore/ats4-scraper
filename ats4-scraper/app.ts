@@ -9,10 +9,6 @@ import { setTimeout } from "timers";
 import RecurseScraper from "./Scraper/RecurseScraper";
 import { writeFileSync } from "fs";
 
-//const s = new Scraper({
-//    baseUrl: "http://www.plany.ath.bielsko.pl",
-//    outputPath: "data.json",
-//});
 const s = new RecurseScraper({
     baseUrl: "http://www.plany.ath.bielsko.pl",
     outputPath: "data.json",
